@@ -219,6 +219,7 @@ def run_tesseract(
     config='',
     nice=0,
     timeout=0,
+    proc_dict=None
 ):
     cmd_args = []
 
@@ -242,6 +243,10 @@ def run_tesseract(
         if e.errno != ENOENT:
             raise e
         raise TesseractNotFoundError()
+    else:
+        proc_dict[str(proc.pid)] = proc
+
+    print(f'Running tesseract with PID {proc.pid}')
 
     with timeout_manager(proc, timeout) as error_string:
         if proc.returncode:
@@ -255,6 +260,7 @@ def run_and_get_output(
     config='',
     nice=0,
     timeout=0,
+    proc_dict=None,
     return_bytes=False,
 ):
 
@@ -267,6 +273,7 @@ def run_and_get_output(
             'config': config,
             'nice': nice,
             'timeout': timeout,
+            'proc_dict': proc_dict
         }
 
         run_tesseract(**kwargs)
@@ -419,18 +426,20 @@ def image_to_data(
     output_type=Output.STRING,
     timeout=0,
     pandas_config=None,
+    proc_dict=None
 ):
     """
     Returns string containing box boundaries, confidences,
     and other information. Requires Tesseract 3.05+
     """
 
+    print(f'Image to data: {proc_dict}')
+
     if get_tesseract_version() < '3.05':
         raise TSVNotSupported()
 
     config = '{} {}'.format('-c tessedit_create_tsv=1', config.strip()).strip()
-    args = [image, 'tsv', lang, config, nice, timeout]
-
+    args = [image, 'tsv', lang, config, nice, timeout, proc_dict]
     return {
         Output.BYTES: lambda: run_and_get_output(*(args + [True])),
         Output.DATAFRAME: lambda: get_pandas_output(
