@@ -433,8 +433,6 @@ def image_to_data(
     and other information. Requires Tesseract 3.05+
     """
 
-    print(f'Image to data: {proc_dict}')
-
     if get_tesseract_version() < '3.05':
         raise TSVNotSupported()
 
